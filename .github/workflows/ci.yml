@@ -1,0 +1,10 @@
+name: Coq build
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: coqorg/coq:8.19.1-mathcomp-2.1
+    steps:
+      - uses: actions/checkout@v4
+      - run: make -k all
