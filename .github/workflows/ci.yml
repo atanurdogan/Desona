@@ -1,52 +1,63 @@
-name: Coq build
-on: [push, pull_request]
+name: Coq CI
+
+on:
+  push:
+    branches: [ "**" ]        # alle Branches
+  pull_request:               # auch PR-Builds
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
-    # Offizielles Coq-Docker-Image (enthält opam)
-    container:
-      image: coqorg/coq:8.18.0
-      options: --user root          # vermeidet Rechte­probleme im Container
-
     env:
-      OPAMYES:   "true"             # opam niemals interaktiv fragen
-      OPAMCOLOR: "always"
+      OPAMYES: "true"         # opam nie interaktiv fragen
 
     steps:
-      # ------------------------------------------------------------
-      # 1. Repository auschecken
-      # ------------------------------------------------------------
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    # ------------------------------------------------------------
+    # 1. Repository auschecken
+    # ------------------------------------------------------------
+    - name: Checkout sources
+      uses: actions/checkout@v4
 
-      # ------------------------------------------------------------
-      # 2. opam initialisieren, Switch anlegen, Abhängigkeiten holen
-      # ------------------------------------------------------------
-      - name: Init opam & install dependencies
-        run: |
-          # Grundsetup ohne Sandbox
-          opam init --bare --disable-sandboxing -a
-          eval $(opam env)
+    # ------------------------------------------------------------
+    # 2. OCaml / opam einrichten (offizieller Action)
+    #    + Coq-Repos registrieren
+    # ------------------------------------------------------------
+    - name: Set up OCaml 4.14 + opam
+      uses: ocaml/setup-ocaml@v2
+      with:
+        ocaml-compiler: 4.14.1
+        opam-repositories: |
+          default:      https://opam.ocaml.org
+          coq-released: https://coq.inria.fr/opam/released
+          coq-extra-dev: https://coq.inria.fr/opam/extra-dev  # ← Finmap liegt hier
 
-          # Neuer Switch „coq818“
-          opam switch create coq818 ocaml-base-compiler.4.14.1
-          eval $(opam env --switch=coq818)
+    # ------------------------------------------------------------
+    # 3. Coq-Toolchain & MathComp installieren
+    # ------------------------------------------------------------
+    - name: Install Coq toolchain
+      run: |
+        opam update
+        opam install -y \
+             coq.8.18.0 \
+             coq-mathcomp-ssreflect.1.17.0 \
+             coq-mathcomp-fingroup.1.17.0 \
+             coq-finmap.1.5.2
 
-          # Coq-Repository hinzufügen + Index laden
-          opam repository add coq-released https://coq.inria.fr/opam/released
-          opam update
+    # ------------------------------------------------------------
+    # 4. (optional) opam-Cache für schnellere Folgeläufe
+    # ------------------------------------------------------------
+    - name: Cache opam root
+      uses: actions/cache@v3
+      with:
+        path: ~/.opam
+        key: ${{ runner.os }}-opam-${{ hashFiles('**/*.opam') }}
+        restore-keys: |
+          ${{ runner.os }}-opam-
 
-          # Coq und MathComp-Pakete installieren
-          opam install -y \
-               coq.8.18.0 \
-               coq-mathcomp-ssreflect.1.17.0 \
-               coq-mathcomp-fingroup.1.17.0 \
-               coq-finmap.1.5.2
-
-      # ------------------------------------------------------------
-      # 3. Projekt kompilieren
-      # ------------------------------------------------------------
-      - name: Build with make
-        run: make -k all
+    # ------------------------------------------------------------
+    # 5. Projekt bauen
+    # ------------------------------------------------------------
+    - name: Build with make
+      run: |
+        eval $(opam env)   # Shell in den neuen Switch einhängen
+        make -k all
