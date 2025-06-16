@@ -1,10 +1,20 @@
 name: Coq build
 on: [push, pull_request]
+
 jobs:
   build:
     runs-on: ubuntu-latest
     container:
-      image: coqorg/coq:8.19.1-mathcomp-2.1
+      image: coqorg/coq:8.19.1        # offizielles Coq-Image
     steps:
-      - uses: actions/checkout@v4
-      - run: make -k all
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install MathComp 2.1
+        run: |
+          apt-get update -qq
+          apt-get install -y libssreflect-ocaml-dev libmathcomp-dev
+
+      - name: Compile project
+        run: make -k all
+
