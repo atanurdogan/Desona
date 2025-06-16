@@ -1,20 +1,25 @@
 # .github/workflows/ci.yml
 name: Coq build
-
 on: [push, pull_request]
 
 jobs:
   build:
     runs-on: ubuntu-22.04
-
     container:
-      image: coqorg/coq:8.18      #  <── fixed tag
-      options: --user root        # stay root inside container
+      image: coqorg/coq:8.18            # ← tag exists
+      options: --user root
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install MathComp packages
+      # ---------- NEW: initialise opam once ----------
+      - name: Initialise opam (non-interactive)
+        run: |
+          opam init -a --disable-sandboxing --yes
+          eval $(opam env)               # load opam env for the rest of the job
+
+      # ---------- add repo & install ----------
+      - name: Add Coq repo and install MathComp
         run: |
           opam repo add coq-released https://coq.inria.fr/opam/released
           opam update
@@ -23,5 +28,8 @@ jobs:
             coq-mathcomp-fingroup \
             coq-mathcomp-finmap
 
+      # ---------- build your project ----------
       - name: Build project
-        run: make -k all           # adapt if you use dune, etc.
+        run: |
+          eval $(opam env)               # make sure env is in this shell
+          make -k all                    # adapt if you use dune, etc.
