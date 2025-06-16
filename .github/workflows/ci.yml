@@ -8,15 +8,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Install Coq 8.19 + MathComp 2.1 via opam
-      - name: Setup Coq
-        uses: coq-community/setup-coq@v1.3.1
-        with:
-          coq-version: "8.19"
-          ocaml-compiler: "4.14"
-          install: "coq-mathcomp-ssreflect.2.1.0"
-
+      - name: Install Coq 8.18 + MathComp 1.17
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y coq libcoq-ssreflect libcoq-mathcomp-ssreflect
       - name: Compile project
         run: make -k all
-
-
