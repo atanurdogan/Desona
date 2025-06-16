@@ -3,30 +3,16 @@ on: [push, pull_request]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest        # GitHub-Runner
+    container:
+      image: mathcomp/mathcomp:1.17-coq8.18   # enthält Coq + MathComp + Finmap
 
     steps:
-      # 1 – Repository auschecken
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Coq 8.18 + MathComp (Ubuntu)
-        run: |
-        sudo apt-get update -qq
-        sudo apt-get install -y --no-install-recommends software-properties-common gnupg lsb-release
-        # Manually download and install Coq
-        wget https://github.com/coq/coq/releases/download/V8.18.0/coq-8.18.0.tar.gz
-        tar -xvzf coq-8.18.0.tar.gz
-        cd coq-8.18.0
-        ./configure
-        make -j$(nproc)
-        sudo make install
-        # Install MathComp manually
-        opam init --disable-sandboxing -y
-        opam install coq-mathcomp-ssreflect coq-mathcomp-fingroup coq-mathcomp-finmap -y
-
-      # 3 – Projekt kompilieren
       - name: Compile project
         run: make -k all
+
 
 
