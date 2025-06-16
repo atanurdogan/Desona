@@ -1,4 +1,3 @@
-
 name: Coq build
 on: [push, pull_request]
 
@@ -7,32 +6,37 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image: coqorg/coq:8.18.0     # offizielles Image mit opam
-      options: --user root         # vermeidet Rechte-Probleme
+      image: coqorg/coq:8.18.0
+      options: --user root               # vermeidet EACCES-Probleme
 
     env:
-      OPAMYES: "true"              # nie interaktiv nachfragen
+      OPAMYES: "true"                    # nie interaktiv nachfragen
 
     steps:
-      # 1 – Repository auschecken
-      - name: Checkout repository
+      # 1 – Repo auschecken
+      - name: Checkout
         uses: actions/checkout@v4
 
-      # 2 – opam initialisieren, Switch anlegen, MathComp & Finmap installieren
-      - name: Init opam & install MathComp
+      # 2 – opam initialisieren, Default-Switch anlegen, Pakete holen
+      - name: Init opam + install MathComp
         run: |
-          opam init -a --disable-sandboxing --bare
-          opam repository add coq-released https://coq.inria.fr/opam/released
-          # ⇒ Switch anlegen (Basis-OCaml 4.14 + Coq 8.18.0)
-          opam switch create coq-8.18.0 ocaml-base-compiler.4.14.1 \
-                             --packages=coq.8.18.0
+          # opam einrichten (ohne Sandbox, ohne Fragen)
+          opam init --disable-sandboxing --bare -a
           eval $(opam env)
 
-          # MathComp + Finmap installieren (Versionen passend zu Coq 8.18)
+          # Default-Switch OCaml 4.14 + Coq 8.18 erstellen und AKTIV setzen
+          opam switch create default ocaml-base-compiler.4.14.1 \
+                             --packages=coq.8.18.0
+          eval $(opam env --switch=default)
+
+          # Offizielles Coq-Repo einbinden (falls noch nicht da)
+          opam repository add coq-released https://coq.inria.fr/opam/released --all-switches
+
+          # MathComp + Finmap installieren
           opam install -y \
-            mathcomp-ssreflect.1.17.0 \
-            mathcomp-fingroup.1.17.0 \
-            coq-finmap.1.5.2
+               mathcomp-ssreflect.1.17.0 \
+               mathcomp-fingroup.1.17.0 \
+               coq-finmap.1.5.2
 
       # 3 – Projekt bauen
       - name: Compile project
