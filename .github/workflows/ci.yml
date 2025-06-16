@@ -10,7 +10,7 @@ jobs:
 
       # Install Coq 8.19 + MathComp 2.1 via opam
       - name: Setup Coq
-        uses: coq-community/setup-coq@v2
+        uses: coq-community/setup-coq@v1
         with:
           coq-version: "8.19"
           ocaml-compiler: "4.14"
