@@ -1,57 +1,35 @@
+# .github/workflows/ci.yml  ──────────────────────────────────────────────
 name: Coq build
 
-on:
-  push:
-  pull_request:
+on: [push, pull_request]
 
 jobs:
   build:
-    runs-on: ubuntu-latest        # 24.04 (“noble”)
+    # 1. Use a *Linux* runner but run every step **inside** the container
+    runs-on: ubuntu-22.04
+
+    # 2. Pre-built Coq 8.18 + OCaml 4.14 image
+    container:
+      image: coqorg/coq:8.18.1
+      options: --user root   # we stay root inside the container
 
     steps:
-      # ------------------------------------------------------------
-      # 1.  Checkout project
-      # ------------------------------------------------------------
+      # -- 1 checkout your repo
       - uses: actions/checkout@v4
 
-      # ------------------------------------------------------------
-      # 2.  Install OCaml 4.14 + opam (NO APT depexts!)
-      # ------------------------------------------------------------
-      - name: Set up OCaml 4.14 + opam
-        uses: ocaml/setup-ocaml@v2
-        with:
-          ocaml-compiler: 4.14.1               # matches Coq-8.18
-          opam-depext: false                   # <- no apt, no darcs issue
-          opam-repositories: |
-            default:      https://opam.ocaml.org
-            coq-released: https://coq.inria.fr/opam/released
-
-      # ------------------------------------------------------------
-      # 3.  Create switch & install Coq + MathComp/Finmap
-      # ------------------------------------------------------------
-      - name: Install Coq tool-chain
+      # -- 2 add the released Coq opam repo & install MathComp
+      - name: Install MathComp packages
         run: |
-          # one switch for isolation
-          opam switch create --yes coq818 4.14.1
-          eval $(opam env --switch=coq818)
-
-          # make sure repos are up-to-date
+          opam repo add coq-released https://coq.inria.fr/opam/released
           opam update
-
-          # install everything with opam only
+          # install only what you really need
           opam install -y \
-            coq.8.18.0 \
-            coq-mathcomp-ssreflect.1.17.0 \
-            coq-mathcomp-fingroup.1.17.0 \
-            coq-finmap.1.6.2
+            coq-mathcomp-ssreflect \
+            coq-mathcomp-fingroup \
+            coq-mathcomp-finmap
 
-          # optional info output
-          opam exec -- coqc -v
-
-      # ------------------------------------------------------------
-      # 4.  Build the project (Makefile in repo root)
-      # ------------------------------------------------------------
-      - name: Build with make
+      # -- 3 build your project
+      - name: Build project
         run: |
-          eval $(opam env --switch=coq818)
-          opam exec -- make -k all
+          # adapt if you use dune etc.
+          make -k all
