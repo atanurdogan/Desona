@@ -1,63 +1,38 @@
-name: Coq CI
+name: Coq build
 
 on:
   push:
-    branches: [ "**" ]        # alle Branches
-  pull_request:               # auch PR-Builds
+  pull_request:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    env:
-      OPAMYES: "true"         # opam nie interaktiv fragen
+    runs-on: ubuntu-latest          # 24.04 (noble)
 
     steps:
-    # ------------------------------------------------------------
-    # 1. Repository auschecken
-    # ------------------------------------------------------------
-    - name: Checkout sources
-      uses: actions/checkout@v4
+      # 1 – Quellcode auschecken
+      - uses: actions/checkout@v4
 
-    # ------------------------------------------------------------
-    # 2. OCaml / opam einrichten (offizieller Action)
-    #    + Coq-Repos registrieren
-    # ------------------------------------------------------------
-    - name: Set up OCaml 4.14 + opam
-      uses: ocaml/setup-ocaml@v2
-      with:
-        ocaml-compiler: 4.14.1
-        opam-repositories: |
-          default:      https://opam.ocaml.org
-          coq-released: https://coq.inria.fr/opam/released
-          coq-extra-dev: https://coq.inria.fr/opam/extra-dev  # ← Finmap liegt hier
+      # 2 – OCaml 4.14 + opam einrichten, ohne System-Depexts (Apt)
+      - name: Set up OCaml 4.14 + opam
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: 4.14.1        # gleiche Version wie Coq 8.18
+          depext: false                 # ←  verhindert 'darcs'-Fehler
+          opam-repositories: |
+            default:      https://opam.ocaml.org
+            coq-released: https://coq.inria.fr/opam/released
+            coq-extra-dev: https://coq.inria.fr/opam/extra-dev
 
-    # ------------------------------------------------------------
-    # 3. Coq-Toolchain & MathComp installieren
-    # ------------------------------------------------------------
-    - name: Install Coq toolchain
-      run: |
-        opam update
-        opam install -y \
-             coq.8.18.0 \
-             coq-mathcomp-ssreflect.1.17.0 \
-             coq-mathcomp-fingroup.1.17.0 \
-             coq-finmap.1.5.2
+      # 3 – Coq 8.18 + MathComp 1.17 + Finmap installieren
+      - name: Install Coq toolchain
+        run: |
+          opam install -y coq.8.18.0 \
+                           coq-mathcomp-ssreflect.1.17.0 \
+                           coq-mathcomp-fingroup.1.17.0 \
+                           coq-finmap.1.6.2
+          opam exec -- coqc -v          # reine Infoausgabe
 
-    # ------------------------------------------------------------
-    # 4. (optional) opam-Cache für schnellere Folgeläufe
-    # ------------------------------------------------------------
-    - name: Cache opam root
-      uses: actions/cache@v3
-      with:
-        path: ~/.opam
-        key: ${{ runner.os }}-opam-${{ hashFiles('**/*.opam') }}
-        restore-keys: |
-          ${{ runner.os }}-opam-
-
-    # ------------------------------------------------------------
-    # 5. Projekt bauen
-    # ------------------------------------------------------------
-    - name: Build with make
-      run: |
-        eval $(opam env)   # Shell in den neuen Switch einhängen
-        make -k all
+      # 4 – Projekt bauen (Makefile erwartet ‘make all’)
+      - name: Build with make
+        run: |
+          opam exec -- make -k all      # -k: alle Beweise durchlaufen lassen
