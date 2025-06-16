@@ -7,38 +7,37 @@ jobs:
 
     container:
       image: coqorg/coq:8.18.0
-      options: --user root               # vermeidet EACCES-Probleme
+      options: --user root            # vermeidet Rechte-Probleme im Container
 
     env:
-      OPAMYES: "true"                    # nie interaktiv nachfragen
+      OPAMYES: "true"                 # opam nie interaktiv fragen
 
     steps:
-      # 1 – Repo auschecken
+      # 1 — Quelltext holen
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 2 – opam initialisieren, Default-Switch anlegen, Pakete holen
-      - name: Init opam + install MathComp
+      # 2 — opam initialisieren, *einfachen* Switch anlegen, Pakete holen
+      - name: Init opam & install deps
         run: |
-          # opam einrichten (ohne Sandbox, ohne Fragen)
-          opam init --disable-sandboxing --bare -a
+          # (a) opam Grundkonfig (ohne Sandbox)
+          opam init --bare --disable-sandboxing -a
           eval $(opam env)
 
-          # Default-Switch OCaml 4.14 + Coq 8.18 erstellen und AKTIV setzen
-          opam switch create default ocaml-base-compiler.4.14.1 \
-                             --packages=coq.8.18.0
-          eval $(opam env --switch=default)
+          # (b) *Einfachen* Switch »coq818« mit OCaml 4.14 anlegen
+          opam switch create coq818 ocaml-base-compiler.4.14.1
+          eval $(opam env --switch=coq818)
 
-          # Offizielles Coq-Repo einbinden (falls noch nicht da)
-          opam repository add coq-released https://coq.inria.fr/opam/released --all-switches
+          # (c) offizielles Coq-Repository hinzufügen
+          opam repository add coq-released https://coq.inria.fr/opam/released
 
-          # MathComp + Finmap installieren
+          # (d) Coq + MathComp + Finmap installieren
           opam install -y \
+               coq.8.18.0 \
                mathcomp-ssreflect.1.17.0 \
                mathcomp-fingroup.1.17.0 \
                coq-finmap.1.5.2
 
-      # 3 – Projekt bauen
+      # 3 — Projekt bauen
       - name: Compile project
         run: make -k all
-
