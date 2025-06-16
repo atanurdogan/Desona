@@ -1,35 +1,27 @@
-# .github/workflows/ci.yml  ──────────────────────────────────────────────
+# .github/workflows/ci.yml
 name: Coq build
 
 on: [push, pull_request]
 
 jobs:
   build:
-    # 1. Use a *Linux* runner but run every step **inside** the container
     runs-on: ubuntu-22.04
 
-    # 2. Pre-built Coq 8.18 + OCaml 4.14 image
     container:
-      image: coqorg/coq:8.18.1
-      options: --user root   # we stay root inside the container
+      image: coqorg/coq:8.18      #  <── fixed tag
+      options: --user root        # stay root inside container
 
     steps:
-      # -- 1 checkout your repo
       - uses: actions/checkout@v4
 
-      # -- 2 add the released Coq opam repo & install MathComp
       - name: Install MathComp packages
         run: |
           opam repo add coq-released https://coq.inria.fr/opam/released
           opam update
-          # install only what you really need
           opam install -y \
             coq-mathcomp-ssreflect \
             coq-mathcomp-fingroup \
             coq-mathcomp-finmap
 
-      # -- 3 build your project
       - name: Build project
-        run: |
-          # adapt if you use dune etc.
-          make -k all
+        run: make -k all           # adapt if you use dune, etc.
