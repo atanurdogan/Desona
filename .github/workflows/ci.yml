@@ -1,3 +1,4 @@
+
 name: Coq build
 on: [push, pull_request]
 
@@ -6,28 +7,34 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image: coqorg/coq:8.18.0
-      options: --user root          # root erlaubt einfaches Schreiben
+      image: coqorg/coq:8.18.0     # offizielles Image mit opam
+      options: --user root         # vermeidet Rechte-Probleme
 
     env:
-      OPAMYES: "true"               # nie interaktiv nachfragen
+      OPAMYES: "true"              # nie interaktiv nachfragen
 
     steps:
+      # 1 – Repository auschecken
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 2 – opam initialisieren, Switch anlegen, MathComp & Finmap installieren
       - name: Init opam & install MathComp
         run: |
-          # opam einrichten (nichts interaktiv, keine Sandbox)
           opam init -a --disable-sandboxing --bare
+          opam repository add coq-released https://coq.inria.fr/opam/released
+          # ⇒ Switch anlegen (Basis-OCaml 4.14 + Coq 8.18.0)
+          opam switch create coq-8.18.0 ocaml-base-compiler.4.14.1 \
+                             --packages=coq.8.18.0
           eval $(opam env)
 
-          # MathComp-Pakete installieren (Versionen passend zu Coq 8.18)
-          opam install \
+          # MathComp + Finmap installieren (Versionen passend zu Coq 8.18)
+          opam install -y \
             mathcomp-ssreflect.1.17.0 \
             mathcomp-fingroup.1.17.0 \
             coq-finmap.1.5.2
 
+      # 3 – Projekt bauen
       - name: Compile project
         run: make -k all
 
