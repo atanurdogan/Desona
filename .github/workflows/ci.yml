@@ -5,39 +5,42 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    # offizielles Docker-Image (Coq 8.18 + opam) als Laufzeitumgebung
     container:
       image: coqorg/coq:8.18.0
-      options: --user root            # vermeidet Rechte-Probleme im Container
+      options: --user root        # verhindert Rechteprobleme beim Schreiben
 
     env:
-      OPAMYES: "true"                 # opam nie interaktiv fragen
+      OPAMYES:   "true"           # opam niemals interaktiv fragen
+      OPAMCOLOR: "always"
 
     steps:
-      # 1 — Quelltext holen
-      - name: Checkout
+      # ----------------- 1. Repository auschecken -----------------
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2 — opam initialisieren, *einfachen* Switch anlegen, Pakete holen
-      - name: Init opam & install deps
+      # ----------------- 2. opam + Abhängigkeiten -----------------
+      - name: Init opam & install dependencies
         run: |
-          # (a) opam Grundkonfig (ohne Sandbox)
+          # a) Grund-Initialisierung (kein Sandbox-Modus, keine Fragen)
           opam init --bare --disable-sandboxing -a
           eval $(opam env)
 
-          # (b) *Einfachen* Switch »coq818« mit OCaml 4.14 anlegen
+          # b) Neuer Switch mit OCaml 4.14 anlegen und aktivieren
           opam switch create coq818 ocaml-base-compiler.4.14.1
           eval $(opam env --switch=coq818)
 
-          # (c) offizielles Coq-Repository hinzufügen
+          # c) Offizielles Coq-Repository einbinden und Index holen
           opam repository add coq-released https://coq.inria.fr/opam/released
+          opam update
 
-          # (d) Coq + MathComp + Finmap installieren
+          # d) Coq 8.18 + MathComp + Finmap installieren
           opam install -y \
-               coq.8.18.0 \
-               mathcomp-ssreflect.1.17.0 \
-               mathcomp-fingroup.1.17.0 \
-               coq-finmap.1.5.2
+              coq.8.18.0 \
+              mathcomp-ssreflect.1.17.0 \
+              mathcomp-fingroup.1.17.0 \
+              coq-finmap.1.5.2
 
-      # 3 — Projekt bauen
-      - name: Compile project
+      # ----------------- 3. Projekt kompilieren -----------------
+      - name: Build with make
         run: make -k all
