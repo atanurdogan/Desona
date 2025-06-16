@@ -6,20 +6,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1 – Quellcode auschecken
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 2 – Coq 8.18 + MathComp installieren (über offizielles PPA)
       - name: Install Coq 8.18 + MathComp (Ubuntu)
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y software-properties-common
+          # Pakete, die add-apt-repository und das PPA benötigen
+          sudo apt-get install -y --no-install-recommends \
+               software-properties-common gnupg lsb-release
+          # offizielles Coq-PPA hinzufügen
           sudo add-apt-repository -y ppa:coq/released
           sudo apt-get update -qq
+          # Coq + MathComp und Finmap installieren
           sudo apt-get install -y \
-            coq \
-            coq-mathcomp-ssreflect \
-            coq-mathcomp-fingroup \
-            coq-mathcomp-finmap
+               coq \
+               coq-mathcomp-ssreflect \
+               coq-mathcomp-fingroup \
+               coq-mathcomp-finmap
 
+      # 3 – Projekt kompilieren
       - name: Compile project
         run: make -k all
+
