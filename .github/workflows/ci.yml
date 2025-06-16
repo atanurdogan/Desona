@@ -5,28 +5,29 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    # Coq-Image als Root starten (schreibt problemlos ins Arbeitsverz.)
     container:
       image: coqorg/coq:8.18.0
-      options: --user root
+      options: --user root          # root erlaubt einfaches Schreiben
+
+    env:
+      OPAMYES: "true"               # nie interaktiv nachfragen
 
     steps:
-      # 1 Quellcode auschecken
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2 MathComp (1.17) + Finmap (1.5) via opam installieren
-      - name: Install MathComp via opam
+      - name: Init opam & install MathComp
         run: |
-          # opam ist bereits initialisiert (switch = coq.8.18.0)
-          opam update -q
-          opam install -y \
+          # opam einrichten (nichts interaktiv, keine Sandbox)
+          opam init -a --disable-sandboxing --bare
+          eval $(opam env)
+
+          # MathComp-Pakete installieren (Versionen passend zu Coq 8.18)
+          opam install \
             mathcomp-ssreflect.1.17.0 \
             mathcomp-fingroup.1.17.0 \
             coq-finmap.1.5.2
-          eval $(opam env)   # Pfade in diese Shell exportieren
 
-      # 3 Projekt kompilieren
       - name: Compile project
         run: make -k all
 
