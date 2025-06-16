@@ -6,18 +6,18 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest          # 24.04 (noble)
+    runs-on: ubuntu-latest
 
     steps:
       # 1 – Quellcode auschecken
       - uses: actions/checkout@v4
 
-      # 2 – OCaml 4.14 + opam einrichten, ohne System-Depexts (Apt)
+      # 2 – OCaml 4.14 + opam einrichten, ohne System-Depexts
       - name: Set up OCaml 4.14 + opam
         uses: ocaml/setup-ocaml@v2
         with:
-          ocaml-compiler: 4.14.1        # gleiche Version wie Coq 8.18
-          depext: false                 # ←  verhindert 'darcs'-Fehler
+          ocaml-compiler: 4.14.1
+          depext: false
           opam-repositories: |
             default:      https://opam.ocaml.org
             coq-released: https://coq.inria.fr/opam/released
@@ -30,9 +30,9 @@ jobs:
                            coq-mathcomp-ssreflect.1.17.0 \
                            coq-mathcomp-fingroup.1.17.0 \
                            coq-finmap.1.6.2
-          opam exec -- coqc -v          # reine Infoausgabe
+          opam exec -- coqc -v
 
       # 4 – Projekt bauen (Makefile erwartet ‘make all’)
       - name: Build with make
         run: |
-          opam exec -- make -k all      # -k: alle Beweise durchlaufen lassen
+          opam exec -- make -k all
