@@ -6,33 +6,52 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest        # 24.04 (“noble”)
 
     steps:
-      # 1 – Quellcode auschecken
+      # ------------------------------------------------------------
+      # 1.  Checkout project
+      # ------------------------------------------------------------
       - uses: actions/checkout@v4
 
-      # 2 – OCaml 4.14 + opam einrichten, ohne System-Depexts
+      # ------------------------------------------------------------
+      # 2.  Install OCaml 4.14 + opam (NO APT depexts!)
+      # ------------------------------------------------------------
       - name: Set up OCaml 4.14 + opam
         uses: ocaml/setup-ocaml@v2
         with:
-          ocaml-compiler: 4.14.1
-          depext: false
+          ocaml-compiler: 4.14.1               # matches Coq-8.18
+          opam-depext: false                   # <- no apt, no darcs issue
           opam-repositories: |
             default:      https://opam.ocaml.org
             coq-released: https://coq.inria.fr/opam/released
-            coq-extra-dev: https://coq.inria.fr/opam/extra-dev
 
-      # 3 – Coq 8.18 + MathComp 1.17 + Finmap installieren
-      - name: Install Coq toolchain
+      # ------------------------------------------------------------
+      # 3.  Create switch & install Coq + MathComp/Finmap
+      # ------------------------------------------------------------
+      - name: Install Coq tool-chain
         run: |
-          opam install -y coq.8.18.0 \
-                           coq-mathcomp-ssreflect.1.17.0 \
-                           coq-mathcomp-fingroup.1.17.0 \
-                           coq-finmap.1.6.2
+          # one switch for isolation
+          opam switch create --yes coq818 4.14.1
+          eval $(opam env --switch=coq818)
+
+          # make sure repos are up-to-date
+          opam update
+
+          # install everything with opam only
+          opam install -y \
+            coq.8.18.0 \
+            coq-mathcomp-ssreflect.1.17.0 \
+            coq-mathcomp-fingroup.1.17.0 \
+            coq-finmap.1.6.2
+
+          # optional info output
           opam exec -- coqc -v
 
-      # 4 – Projekt bauen (Makefile erwartet ‘make all’)
+      # ------------------------------------------------------------
+      # 4.  Build the project (Makefile in repo root)
+      # ------------------------------------------------------------
       - name: Build with make
         run: |
+          eval $(opam env --switch=coq818)
           opam exec -- make -k all
