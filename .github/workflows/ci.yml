@@ -8,9 +8,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Coq 8.18 + MathComp 1.17
+      - name: Install Coq 8.18 + MathComp (Ubuntu)
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y coq libcoq-ssreflect libcoq-mathcomp-ssreflect
+          sudo apt-get install -y coq \
+                                  coq-mathcomp-ssreflect \
+                                  coq-mathcomp-fingroup \
+                                  coq-mathcomp-finmap
+
       - name: Compile project
         run: make -k all
