@@ -3,20 +3,23 @@ on: [push, pull_request]
 
 jobs:
   build:
-    runs-on: ubuntu-latest          # GitHub-Runner
+    runs-on: ubuntu-latest
+
+    # Container mit Root-User starten
     container:
-      image: coqorg/coq:8.18.0      # offizielles, vorhandenes Coq-Image
+      image: coqorg/coq:8.18.0
+      options: --user root
 
     steps:
-      # 1 – Repository auschecken
-      - name: Checkout
+      # 1 – Repository auschecken (läuft jetzt mit Root-Rechten)
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2 – MathComp (1.17) & Finmap nachinstallieren
+      # 2 – MathComp + Finmap installieren
       - name: Install MathComp
         run: |
           apt-get update -qq
-          DEBIAN_FRONTEND=noninteractive apt-get install -y \
+          apt-get install -y \
             coq-mathcomp-ssreflect \
             coq-mathcomp-fingroup \
             coq-mathcomp-finmap
@@ -24,3 +27,4 @@ jobs:
       # 3 – Projekt kompilieren
       - name: Compile project
         run: make -k all
+
