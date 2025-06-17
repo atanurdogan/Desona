@@ -1,0 +1,7 @@
+(coq.theory
+ (name core)
+ (modules demo)        ; nur demo.v – später ergänzen
+ (packages
+  coq-mathcomp-ssreflect
+  coq-mathcomp-algebra
+  coq-mathcomp-fingroup))

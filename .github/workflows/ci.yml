@@ -1,35 +1,21 @@
-# .github/workflows/ci.yml
-name: Coq build
+name: CI
+
 on: [push, pull_request]
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
-    container:
-      image: coqorg/coq:8.18            # ← tag exists
-      options: --user root
-
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      # ---------- NEW: initialise opam once ----------
-      - name: Initialise opam (non-interactive)
-        run: |
-          opam init -a --disable-sandboxing --yes
-          eval $(opam env)               # load opam env for the rest of the job
-
-      # ---------- add repo & install ----------
-      - name: Add Coq repo and install MathComp
-        run: |
-          opam repo add coq-released https://coq.inria.fr/opam/released
-          opam update
+      - uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: 4.14.1
+          dune-cache: true
+      - run: opam repo add coq-released https://coq.inria.fr/opam/released
+      - run: |
           opam install -y \
-            coq-mathcomp-ssreflect \
-            coq-mathcomp-fingroup \
-            coq-mathcomp-finmap
-
-      # ---------- build your project ----------
-      - name: Build project
-        run: |
-          eval $(opam env)               # make sure env is in this shell
-          make -k all                    # adapt if you use dune, etc.
+            coq.8.18.0 \
+            coq-mathcomp-ssreflect.2.4.0 \
+            coq-mathcomp-algebra.2.4.0 \
+            coq-mathcomp-fingroup.2.4.0
+      - run: opam exec -- dune build @all
